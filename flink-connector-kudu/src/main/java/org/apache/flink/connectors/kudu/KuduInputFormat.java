@@ -153,7 +153,7 @@ public class KuduInputFormat<OUT extends Tuple> extends RichInputFormat<OUT, Kud
             return rowResultToTuple(row);
         }
         // if not, check that current scanner has more iterators
-        else if(scanner.hasMoreRows()){
+        else if (scanner.hasMoreRows()) {
             this.resultIterator = scanner.nextRows();
             return nextRecord(reuse);
         }
@@ -190,7 +190,7 @@ public class KuduInputFormat<OUT extends Tuple> extends RichInputFormat<OUT, Kud
 
     private KuduScanToken.KuduScanTokenBuilder getKuduScanTokenBuilder() {
         KuduScanToken.KuduScanTokenBuilder tokenBuilder = client
-                .newScanTokenBuilder(table).limit(3000);
+                .newScanTokenBuilder(table);
 
         if (conf.projection != null && conf.projection.size() > 0) {
             tokenBuilder.setProjectedColumnNames(conf.projection);
@@ -223,6 +223,26 @@ public class KuduInputFormat<OUT extends Tuple> extends RichInputFormat<OUT, Kud
         private List<String> projection = new ArrayList<>();
 
         private int limit;
+
+        public String getMasterAddress() {
+            return masterAddress;
+        }
+
+        public String getTableName() {
+            return tableName;
+        }
+
+        public List<Predicate> getPredicates() {
+            return predicates;
+        }
+
+        public List<String> getProjection() {
+            return projection;
+        }
+
+        public int getLimit() {
+            return limit;
+        }
 
         private Conf() {
         }
