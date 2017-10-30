@@ -202,7 +202,7 @@ public class KuduInputFormat<OUT extends Tuple> extends RichInputFormat<OUT, Kud
 
         if (conf.limit > 0) {
             tokenBuilder.limit(conf.limit); // FIXME: https://issues.apache.org/jira/browse/KUDU-16
-            // Server side limit)= operator for java-based scanners are not implemented yet
+            // Server side limit() operator for java-based scanners are not implemented yet
 
         }
 
