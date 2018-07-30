@@ -17,18 +17,11 @@
 
 package org.apache.flink.connectors.kudu;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.flink.api.common.io.OutputFormat;
-import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connectors.kudu.internal.KuduUtils;
 import org.apache.flink.connectors.kudu.internal.Predicate;
 import org.apache.flink.util.Preconditions;
-
 import org.apache.kudu.client.KuduClient;
 import org.apache.kudu.client.KuduSession;
 import org.apache.kudu.client.KuduTable;
@@ -36,11 +29,20 @@ import org.apache.kudu.client.OperationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.flink.connectors.kudu.internal.KuduUtils.insertTuple;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-public class KuduOutputFormat<OUT extends Tuple> implements OutputFormat<OUT> {
+import static org.apache.flink.connectors.kudu.internal.KuduUtils.insertObjects;
 
-    private static final Logger LOG = LoggerFactory.getLogger(KuduOutputFormat.class);
+/**
+ * Base output format for Flink-Kudu connector
+ * @param <OUT>
+ */
+public abstract class KuduBaseOutputFormat<OUT> implements OutputFormat<OUT> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(KuduBaseOutputFormat.class);
 
     /**
      * Pointer in charge of handling insert operations
@@ -67,7 +69,7 @@ public class KuduOutputFormat<OUT extends Tuple> implements OutputFormat<OUT> {
      **/
     private String tableName;
 
-    public KuduOutputFormat(Conf conf) {
+    public KuduBaseOutputFormat(Conf conf) {
         this.conf = Preconditions.checkNotNull(conf, "Kudu config cannot be null");
     }
 
@@ -95,8 +97,8 @@ public class KuduOutputFormat<OUT extends Tuple> implements OutputFormat<OUT> {
     }
 
     @Override
-    public void writeRecord(OUT tuple) throws IOException {
-        OperationResponse op = insertTuple(tuple, this.table, this.session, conf.writeMode);
+    public void writeRecord(OUT record) throws IOException {
+        OperationResponse op = insertObjects(extract(record), this.table, this.session, conf.writeMode);
         if(op.hasRowError()){
             LOG.warn("An error occurred trying to insert a record in Kudu : {} ", op.getRowError());
         }
@@ -112,6 +114,7 @@ public class KuduOutputFormat<OUT extends Tuple> implements OutputFormat<OUT> {
         }
     }
 
+    protected abstract Object[] extract(OUT record);
 
     /**
      * A serializable, configuration class that allows to configure a KuduOutputFormat.
@@ -149,13 +152,13 @@ public class KuduOutputFormat<OUT extends Tuple> implements OutputFormat<OUT> {
             return writeMode;
         }
 
-        public static KuduOutputFormat.Conf.ConfBuilder builder() {
-            return new KuduOutputFormat.Conf.ConfBuilder();
+        public static KuduBaseOutputFormat.Conf.ConfBuilder builder() {
+            return new KuduBaseOutputFormat.Conf.ConfBuilder();
         }
 
         public static class ConfBuilder implements Serializable {
 
-            private KuduOutputFormat.Conf conf;
+            private KuduBaseOutputFormat.Conf conf;
 
             public ConfBuilder() {
                 this.conf = new Conf();
