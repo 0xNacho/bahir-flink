@@ -96,7 +96,7 @@ public class KuduUtils {
      * @return          Enriched Kudu row with Flink data
      */
     private static PartialRow prepare(PartialRow row, Schema schema, Object[] objs) {
-        for (int i = 0; i < schema.getColumnCount(); i++) {
+        for (int i = 0; i < objs.length; i++) {
             ColumnSchema columnSchema = schema.getColumnByIndex(i);
             Type type = columnSchema.getType();
             switch (type) {
