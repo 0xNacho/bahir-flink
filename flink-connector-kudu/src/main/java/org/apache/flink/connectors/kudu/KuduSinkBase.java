@@ -17,12 +17,10 @@
 
 package org.apache.flink.connectors.kudu;
 
-import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connectors.kudu.internal.KuduUtils;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.util.Preconditions;
-
 import org.apache.kudu.client.KuduClient;
 import org.apache.kudu.client.KuduSession;
 import org.apache.kudu.client.KuduTable;
@@ -30,28 +28,23 @@ import org.apache.kudu.client.OperationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.flink.connectors.kudu.internal.KuduUtils.insertTuple;
+import static org.apache.flink.connectors.kudu.internal.KuduUtils.insertObjects;
 
 /**
- * This class is in charge of inserting Flink tuples in Kudu.
- *
- * @param <IN> Class extending from org.apache.flink.api.java.tuple.Tuple
+ * Base class to save Flink data in Kudu.
+ * @param <IN>
  */
-public class KuduSink<IN extends Tuple> extends RichSinkFunction<IN> {
+public abstract class KuduSinkBase<IN> extends RichSinkFunction<IN> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(KuduOutputFormat.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KuduSinkBase.class);
 
-    private KuduOutputFormat.Conf conf;
+    protected KuduBaseOutputFormat.Conf conf;
 
     private transient KuduTable table;
 
     private transient KuduSession session;
 
     private transient KuduClient client;
-
-    public KuduSink(KuduOutputFormat.Conf conf) {
-        this.conf = conf;
-    }
 
     @Override
     public void open(Configuration parameters) {
@@ -73,9 +66,9 @@ public class KuduSink<IN extends Tuple> extends RichSinkFunction<IN> {
 
 
     @Override
-    public void invoke(IN tuple) throws Exception {
-        OperationResponse op = insertTuple(tuple, this.table, this.session, conf.getWriteMode());
-        if(op.hasRowError()){
+    public void invoke(IN record) {
+        OperationResponse op = insertObjects(extract(record), this.table, this.session, conf.getWriteMode());
+        if (op.hasRowError()) {
             LOG.warn("An error occurred trying to insert a record in Kudu : {} ", op.getRowError());
         }
     }
@@ -83,11 +76,13 @@ public class KuduSink<IN extends Tuple> extends RichSinkFunction<IN> {
     @Override
     public void close() throws Exception {
         super.close();
-        if(session != null){
+        if (session != null) {
             session.close();
         }
-        if(client != null){
+        if (client != null) {
             client.shutdown();
         }
     }
+
+    protected abstract Object[] extract(IN record);
 }

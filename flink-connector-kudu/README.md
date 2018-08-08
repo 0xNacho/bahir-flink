@@ -1,6 +1,6 @@
 # Flink Kudu Connector
 
-This connector provides a source (```KuduInputFormat```) and a sink/output (```KuduSink``` and ```KuduOutputFormat```, respectively) that can read and write to [Kudu](https://kudu.apache.org/). To use this connector, add the
+This connector provides a source (```KuduInputFormat```) and a sink/output (`KuduTupleSink`/`KuduScalaProductSink` and `KuduTupleOutputFormat`/`KuduScalaProductOutputFormat` for Java/Scala compatibility respectively) that can read and write to [Kudu](https://kudu.apache.org/). To use this connector, add the
 following dependency to your project:
 
     <dependency>
@@ -16,8 +16,8 @@ See how to link with them for cluster execution [here](https://ci.apache.org/pro
 
 ## Installing Kudu
 
-Follow the instructions from the[Kudu download page](https://www.cloudera.com/documentation/kudu/latest/topics/kudu_installation.html).
-Optionally, you can download a quickstart virtual machine from[here](https://kudu.apache.org/docs/quickstart.html). It provides a linux-based OS with Kudu and[Impala](https://impala.apache.org/) already installed. 
+Follow the instructions from the [Kudu download page](https://www.cloudera.com/documentation/kudu/latest/topics/kudu_installation.html).
+Optionally, you can download a quickstart virtual machine from [here](https://kudu.apache.org/docs/quickstart.html). It provides a linux-based OS with Kudu and [Impala](https://impala.apache.org/) already installed. 
 
 ## KuduInputFormat
 
@@ -49,16 +49,16 @@ Optionally, you can download a quickstart virtual machine from[here](https://kud
         .count();
 ```
 
-Note that you can specify two different write modes: `ÌNSERT` or `UPSERT`. If we try to insert an existing record with the `INSERT mode, the driver just ignores the record.
+Note that you can specify two different write modes: `INSERT` or `UPSERT`. If we try to insert an existing record with the `INSERT` mode, the driver just ignores the record.
 
-## KuduOutputFormat
+## KuduBaseOutputFormat
 
 ```
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
         env.setParallelism(PARALLELISM);
         
-        KuduOutputFormat.Conf outputConfig = KuduOutputFormat.Conf
+        KuduBaseOutputFormat.Conf outputConfig = KuduBaseOutputFormat.Conf
             .builder()
             .masterAddress("quickstart.cloudera")
             .tableName("impala::default.test")
@@ -77,15 +77,15 @@ Note that you can specify two different write modes: `ÌNSERT` or `UPSERT`. If w
 
         env
             .fromCollection(list)
-            .output(new KuduOutputFormat<>(outputConfig));
+            .output(new KuduBaseOutputFormat<>(outputConfig));
 
         env.execute();
 ```
 
-## KuduSink
+## KuduTupleSink
 
 ```
-        KuduOutputFormat.Conf outputConfig = KuduOutputFormat.Conf
+        KuduBaseOutputFormat.Conf outputConfig = KuduBaseOutputFormat.Conf
                 .builder()
                 .masterAddress("quickstart.cloudera")
                 .tableName("impala::default.test")
@@ -108,7 +108,7 @@ Note that you can specify two different write modes: `ÌNSERT` or `UPSERT`. If w
 
         env
             .fromCollection(list)
-            .addSink(new KuduSink<>(outputConfig));
+            .addSink(new KuduTupleSink<>(outputConfig));
 
         env.execute();
 ```
